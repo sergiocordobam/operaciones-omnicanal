@@ -2,9 +2,18 @@ import ollama
 import numpy as np
 import faiss
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from models import user_input as models
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins = ["http://localhost:3000"],
+    allow_credentials = True,
+    allow_methods = ["*"],
+    allow_headers = ["*"],
+)
 
 medications = {
     "Paracetamol": {"description": "Alivia el dolor y reduce la fiebre.", "price": 10000},
