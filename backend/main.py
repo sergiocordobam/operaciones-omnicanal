@@ -43,11 +43,12 @@ def recommend_medication(user_description: str, budget: int):
     for idx in I[0]:
         med_name = med_names[idx]
         med_price = med_prices[idx]
+        med_similarity = D[0].tolist()[0]
 
         if med_price <= budget:
-            return {"best_match": med_name, "price": med_price}
+            return {"best_match": med_name, "price": med_price, "similarity": med_similarity}
 
-    return {"best_match": "No medication found within your budget.", "price": None}
+    return {"best_match": "No medication found within your budget.", "price": None, "similarity": None}
 
 @app.post("/process")
 async def process_input(user_input: models.UserInput):
