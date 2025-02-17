@@ -38,12 +38,12 @@ for med, data in medications.items():
 def recommend_medication(user_description: str, budget: int):
     user_embedding = get_embedding(user_description).reshape(1, -1)
 
-    D, I = index.search(user_embedding, k=len(medications))  
+    similarities, indexes = index.search(user_embedding, k=len(medications))  
 
-    for idx in I[0]:
-        med_name = med_names[idx]
-        med_price = med_prices[idx]
-        med_similarity = D[0].tolist()[0]
+    for result_index in indexes[0]:
+        med_name = med_names[result_index]
+        med_price = med_prices[result_index]
+        med_similarity = similarities[0].tolist()[0]
 
         if med_price <= budget:
             return {"best_match": med_name, "price": med_price, "similarity": med_similarity}
