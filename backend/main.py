@@ -67,6 +67,10 @@ async def process_input(user_input: models.UserInput):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/medications")
+async def get_medications():
+    return [{"name": name, **info} for name, info in medications.items()]
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
