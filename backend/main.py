@@ -1,5 +1,6 @@
 import ollama
 import numpy as np
+import faiss
 from fastapi import FastAPI, HTTPException
 from models import user_input as models
 
@@ -12,45 +13,41 @@ medications = {
     "Loratadina": {"description": "Antihistamínico para alergias.", "price": 12000},
 }
 
+d = 384  
+index = faiss.IndexFlatIP(d)
+med_names = []
+med_prices = []
+
 def get_embedding(text: str):
     response = ollama.embed(model="all-minilm", input=text)
-
     if "embeddings" not in response:
         raise ValueError("Embeddings not found in the response.")
+    
+    embedding = np.array(response["embeddings"][0]).astype("float32")
 
-    embedding = np.array(response["embeddings"][0])
+    embedding /= np.linalg.norm(embedding)
 
-    return embedding.flatten()
+    return embedding
 
-def cosine_similarity(vec1, vec2):
-    return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+for med, data in medications.items():
+    embedding = get_embedding(data["description"])
+    index.add(np.array([embedding]))
+    med_names.append(med)
+    med_prices.append(data["price"])
 
 def recommend_medication(user_description: str, budget: int):
-    user_embedding = get_embedding(user_description)
+    user_embedding = get_embedding(user_description).reshape(1, -1)
 
-    best_match = None
-    best_score = float("-inf")
-    best_price = None
+    D, I = index.search(user_embedding, k=len(medications))  
 
-    print(f"\nUser input: {user_description}")
-    print(f"User budget: {budget}\n")
+    for idx in I[0]:
+        med_name = med_names[idx]
+        med_price = med_prices[idx]
 
-    for med, data in medications.items():
-        med_embedding = get_embedding(data["description"])
-        similarity = cosine_similarity(user_embedding, med_embedding)
+        if med_price <= budget:
+            return {"best_match": med_name, "price": med_price}
 
-        print(f"Checking: {med} | Similarity: {similarity:.4f} | Price: {data['price']}")  
-
-        if data["price"] <= budget and similarity > best_score:
-            best_score = similarity
-            best_match = med
-            best_price = data["price"]
-
-    if best_match is None:
-        return {"best_match": "No medication found within your budget.", "price": None}
-
-    return {"best_match": best_match, "price": best_price}
-
+    return {"best_match": "No medication found within your budget.", "price": None}
 
 @app.post("/process")
 async def process_input(user_input: models.UserInput):
