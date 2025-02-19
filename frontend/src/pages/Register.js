@@ -14,7 +14,7 @@ const Navbar = ({ user, setUser }) => {
         .then((res) => res.json())
         .then((data) => {
           if (data.username) {
-            setUser(data.username);
+            setUser(data);
           }
         })
         .catch(() => setUser(null));
@@ -37,9 +37,10 @@ const Navbar = ({ user, setUser }) => {
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ms-auto">
             <li className="nav-item"><a className="nav-link" href="/">Inicio</a></li>
+            <li className="nav-item"><a className="nav-link" href="/productos">Productos</a></li>
             {user ? (
               <>
-                <li className="nav-item"><span className="nav-link text-white">Bienvenido, {user}</span></li>
+                <li className="nav-item"><span className="nav-link text-white">Bienvenido, {user.username}</span></li>
                 <li className="nav-item">
                   <button className="btn btn-outline-light" onClick={handleLogout}>Cerrar Sesión</button>
                 </li>
