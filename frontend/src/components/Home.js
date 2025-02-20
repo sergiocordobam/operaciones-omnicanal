@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Banner from "./Banner";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const Home = () => {
@@ -20,10 +21,8 @@ const Home = () => {
 
   return (
     <div>
-      {/* Sección Hero */}
-      <section className="hero-section text-center d-flex align-items-center justify-content-center">
-        <h1 className="display-4 fw-bold text-white">Bienvenido a Farmacia Agilista</h1>
-      </section>
+      {/* ✅ Banner agregado al Home */}
+      <Banner />
 
       {/* Sección de Productos Destacados */}
       <section className="container mt-5">
