@@ -8,7 +8,14 @@ const Login = ({ setUser }) => {
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    if (!username || !password) {
+      setMessage("Todos los campos son obligatorios");
+      return;
+    }
+
     const response = await fetch("http://127.0.0.1:8000/login", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -27,31 +34,49 @@ const Login = ({ setUser }) => {
   };
 
   return (
-    <div className="container mt-5 d-flex justify-content-center align-items-center" style={{ minHeight: "80vh" }}>
-      <div className="w-50">
-        <h2 className="text-center">Iniciar Sesión</h2>
-        <div className="mb-3">
-          <label className="form-label">Nombre de Usuario</label>
-          <input
-            type="text"
-            className="form-control"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
+    <div className="container mt-5">
+      <div className="row justify-content-center">
+        <div className="col-md-6">
+          <div className="card p-4">
+            <h2 className="text-center">Iniciar Sesión</h2>
+            <form onSubmit={handleLogin}>
+              <div className="mb-3">
+                <label className="form-label">Nombre de Usuario</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Contraseña</label>
+                <input
+                  type="password"
+                  className="form-control"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <button type="submit" className="btn btn-primary w-100">
+                Iniciar Sesión
+              </button>
+              {message && <p className="mt-3 text-center text-danger">{message}</p>}
+            </form>
+            <p className="mt-3 text-center">
+              ¿No tienes cuenta?{" "}
+              <span
+                className="text-primary fw-bold"
+                style={{ cursor: "pointer" }}
+                onClick={() => navigate("/register")}
+              >
+                Regístrate acá
+              </span>
+            </p>
+          </div>
         </div>
-        <div className="mb-3">
-          <label className="form-label">Contraseña</label>
-          <input
-            type="password"
-            className="form-control"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <button className="btn btn-primary w-100" onClick={handleLogin}>
-          Iniciar Sesión
-        </button>
-        {message && <p className="mt-3 text-center text-danger">{message}</p>}
       </div>
     </div>
   );
