@@ -5,6 +5,8 @@ import Home from "./components/Home";
 import Footer from "./components/Footer";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ChatLLM from "./pages/ChatLLM";
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -32,6 +34,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login setUser={setUser} />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/chat-llm" element={<ChatLLM />} />
       </Routes>
       <Footer />
     </Router>
