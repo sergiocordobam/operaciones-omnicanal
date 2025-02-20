@@ -43,6 +43,6 @@
   "devDependencies": {
     "autoprefixer": "^10.4.20",
     "postcss": "^8.5.2",
-    "webpack-dev-server": "^5.2.0"
+    "webpack": "^4.42.0"
   }
 }
