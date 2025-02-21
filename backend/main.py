@@ -166,7 +166,7 @@ def recommend_medication(user_description: str, budget: int):
         med_price = med_prices[result_index]
         med_similarity = similarities[0].tolist()[i]
 
-        print(f"🔎 Evaluando: {med_name} | Similitud: {med_similarity:.4f} | Precio: {med_price}")
+        print(f"Evaluando: {med_name} | Similitud: {med_similarity:.4f} | Precio: {med_price}")
 
         # FILTRAR por presupuesto y similitud mínima
         if med_price <= budget and med_similarity > best_score:  # 0.3 es un umbral razonable
@@ -175,7 +175,7 @@ def recommend_medication(user_description: str, budget: int):
             best_price = med_price
 
     if best_match:
-        print(f"✅ Best Match Final: {best_match} con Similitud: {best_score}")
+        print(f"Best Match Final: {best_match} con Similitud: {best_score}")
         return {"best_match": best_match, "price": best_price, "similarity": best_score}
     else:
         return {"best_match": "No se encontró un medicamento adecuado en tu presupuesto.", "price": None, "similarity": None}
