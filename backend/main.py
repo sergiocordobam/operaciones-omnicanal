@@ -14,19 +14,8 @@ from models import user_input as models
 
 #SECCION DE CONFIGURACION DEL LOGIN Y DEL LOCAL STORAGE , LLM MAS ABAJO
 
-# Configuración de JWT
-SECRET_KEY = "mysecretkey"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-USERS_FILE = "users.json"
-
-app = FastAPI()
-
-# Configuración de seguridad y encriptación
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 # Configuración de CORS para permitir peticiones del frontend
+app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],    
@@ -34,6 +23,17 @@ app.add_middleware(
     allow_methods=["*"],  
     allow_headers=["*"],  
 )
+
+# Configuración de JWT
+SECRET_KEY = "mysecretkey"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+USERS_FILE = "users.json"
+
+# Configuración de seguridad y encriptación
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 # Leer usuarios desde el archivo
 def read_users():
     if not os.path.exists(USERS_FILE):
@@ -103,56 +103,85 @@ async def current_user(user: dict = Depends(get_current_user)):
     return user 
 
 
-#SECCION DEL LLM Y OLLAMA
+#LLM
 
-# Medications (Sistema de recomendación de medicamentos con embeddings)
+# Modelo de Entrada de Usuario
+class UserInput(BaseModel):
+    description: str
+    budget: int
+
+# Medications con descripción más precisa
 medications = {
-    "Paracetamol": {"description": "Alivia el dolor y reduce la fiebre.", "price": 10000},
-    "Ibuprofeno": {"description": "Reduce inflamación y dolor.", "price": 15000},
-    "Amoxicilina": {"description": "Antibiótico para infecciones bacterianas.", "price": 30000},
-    "Loratadina": {"description": "Antihistamínico para alergias.", "price": 12000},
+    "Paracetamol": {"description": "fiebre, dolor de cabeza, gripe, resfriado", "price": 10000},
+    "Ibuprofeno": {"description": "migrañas, dolor menstrual, fiebre, artritis", "price": 15000},
+    "Loratadina": {"description": "alergias, urticaria, rinitis, picazón en la piel", "price": 12000},
+    "Omeprazol": {"description": "gastritis, reflujo, úlceras gástricas", "price": 25000},
+    "Amoxicilina": {"description": "infecciones bacterianas, bronquitis, faringitis, neumonía", "price": 30000},
+    "Salbutamol": {"description": "asma, broncoespasmo, dificultad respiratoria", "price": 18000},
+    "Metformina": {"description": "diabetes tipo 2, resistencia a la insulina", "price": 22000},    
 }
 
-d = 384  
+# Preparar FAISS con tamaño correcto
+d = 768 
 index = faiss.IndexFlatIP(d)
 med_names = []
 med_prices = []
 
+# Obtener embeddings de todos los medicamentos antes de agregarlos al índice
+med_embeddings = []
+
 def get_embedding(text: str):
-    response = ollama.embed(model="all-minilm", input=text)
+    response = ollama.embed(model="nomic-embed-text", input=text)
     if "embeddings" not in response:
         raise ValueError("Embeddings not found in the response.")
     
     embedding = np.array(response["embeddings"][0]).astype("float32")
     embedding /= np.linalg.norm(embedding)
-
     return embedding
 
-# Agregar embeddings de los medicamentos
 for med, data in medications.items():
     embedding = get_embedding(data["description"])
-    index.add(np.array([embedding]))
+    med_embeddings.append(embedding)
     med_names.append(med)
     med_prices.append(data["price"])
 
-# Función para recomendar medicamento
+# Agregar todos los embeddings a FAISS 
+index.add(np.array(med_embeddings, dtype="float32"))
+
+# Función para recomendar medicamentos
 def recommend_medication(user_description: str, budget: int):
     user_embedding = get_embedding(user_description).reshape(1, -1)
 
+    # Buscar el top K en FAISS
     similarities, indexes = index.search(user_embedding, k=len(medications))  
 
-    for result_index in indexes[0]:
+    print(similarities)
+    print(indexes)
+    best_match = None
+    best_score = float("-inf")
+    best_price = None
+
+    for i, result_index in enumerate(indexes[0]):
         med_name = med_names[result_index]
         med_price = med_prices[result_index]
-        med_similarity = similarities[0].tolist()[0]
+        med_similarity = similarities[0].tolist()[i]
 
-        if med_price <= budget:
-            return {"best_match": med_name, "price": med_price, "similarity": med_similarity}
+        print(f"🔎 Evaluando: {med_name} | Similitud: {med_similarity:.4f} | Precio: {med_price}")
 
-    return {"best_match": "No medication found within your budget.", "price": None, "similarity": None}
+        # FILTRAR por presupuesto y similitud mínima
+        if med_price <= budget and med_similarity > best_score:  # 0.3 es un umbral razonable
+            best_score = med_similarity
+            best_match = med_name
+            best_price = med_price
+
+    if best_match:
+        print(f"✅ Best Match Final: {best_match} con Similitud: {best_score}")
+        return {"best_match": best_match, "price": best_price, "similarity": best_score}
+    else:
+        return {"best_match": "No se encontró un medicamento adecuado en tu presupuesto.", "price": None, "similarity": None}
 
 @app.post("/process")
-async def process_input(user_input: models.UserInput):
+async def process_input(user_input: UserInput):
     try:
         recommended_med = recommend_medication(user_input.description, user_input.budget)
         return recommended_med
